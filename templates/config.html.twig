@@ -1,0 +1,91 @@
+{% extends 'layout/page_without_tabs.html.twig' %}
+
+{% block content_body %}
+<div class="container-xl">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="ti ti-brand-microsoft-teams"></i>
+            Ticketeamer
+        </h2>
+        <p class="text-muted">Notificações privadas do GLPI para técnicos definidos no grupo técnico da categoria ITIL.</p>
+    </div>
+
+    {% if not client_secret_configured or not encryption_key_configured %}
+        <div class="alert alert-warning">
+            <strong>Variáveis de ambiente obrigatórias:</strong>
+            <ul class="mb-0">
+                {% if not client_secret_configured %}<li><code>GLPI_TEAMS_BRIDGE_CLIENT_SECRET</code></li>{% endif %}
+                {% if not encryption_key_configured %}<li><code>GLPI_TEAMS_BRIDGE_ENCRYPTION_KEY</code></li>{% endif %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header"><h3 class="card-title">Microsoft Entra ID / Teams</h3></div>
+        <div class="card-body">
+            <form method="post" action="/plugins/ticketeamer/config">
+                <input type="hidden" name="_glpi_csrf_token" value="{{ csrf_token() }}">
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Tenant ID</label>
+                        <input class="form-control" type="text" name="tenant_id" value="{{ config.tenant_id }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Client ID</label>
+                        <input class="form-control" type="text" name="client_id" value="{{ config.client_id }}" required>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Redirect URI</label>
+                        <input class="form-control" type="url" name="redirect_uri" value="{{ config.redirect_uri }}" placeholder="https://glpi.example.com/plugins/ticketeamer/oauth/callback" required>
+                        <small class="form-hint">A URI precisa ser cadastrada exatamente igual no App Registration do Microsoft Entra ID.</small>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label">Prefixo da mensagem</label>
+                        <input class="form-control" type="text" name="message_prefix" value="{{ config.message_prefix }}" maxlength="255">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Tentativas máximas</label>
+                        <input class="form-control" type="number" name="retry_limit" value="{{ config.retry_limit }}" min="1" max="20">
+                    </div>
+                </div>
+
+                <label class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" name="enabled" value="1" {% if config.enabled %}checked{% endif %}>
+                    <span class="form-check-label">Ativar notificações automáticas</span>
+                </label>
+
+                <button class="btn btn-primary" type="submit">
+                    <i class="ti ti-device-floppy"></i> Salvar configuração
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3 class="card-title">Autorização Microsoft</h3></div>
+        <div class="card-body">
+            {% if authorized %}
+                <div class="alert alert-success">Conta Microsoft autorizada. O token de renovação está armazenado criptografado.</div>
+            {% else %}
+                <div class="alert alert-info">Ainda não existe autorização Microsoft para o processamento da fila.</div>
+            {% endif %}
+
+            {% if oauth_ready %}
+                <a class="btn btn-outline-primary" href="{{ authorization_url }}">
+                    <i class="ti ti-brand-microsoft"></i> Autorizar Microsoft Teams
+                </a>
+            {% else %}
+                <p class="text-muted mb-0">Salve Tenant ID, Client ID, Redirect URI e configure o Client Secret antes de autorizar.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="alert alert-secondary mt-4">
+        <strong>Fluxo:</strong> chamado criado → categoria ITIL → grupo técnico da categoria → membros ativos do grupo → fila local → cron do GLPI → conversa privada 1:1 no Teams.
+    </div>
+</div>
+{% endblock %}

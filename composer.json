@@ -1,0 +1,14 @@
+{
+  "name": "internal/glpi-teams-bridge",
+  "description": "GLPI 11 plugin that routes new tickets to Microsoft Teams private chats based on ITIL category technical groups.",
+  "type": "glpi-plugin",
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "GlpiPlugin\\Ticketeamer\\": "src/"
+    }
+  }
+}
